@@ -8,7 +8,6 @@ RSpec.describe Task, type: :model do
       expect(task.errors).to be_empty
     end
 
-    # validates :title, presence: true, uniqueness: true
     it 'タイトルがなければ無効' do
       task_without_title = FactoryBot.build(:task_todo, title: "")
       expect(task_without_title).to be_invalid
@@ -27,7 +26,6 @@ RSpec.describe Task, type: :model do
       expect(task_with_duplicated_title).to be_invalid
       expect(task_with_duplicated_title.errors[:title]).to eq ["has already been taken"]
     end
-
 
     it '異なるタイトルは有効' do
       task = FactoryBot.create(:task_todo)
