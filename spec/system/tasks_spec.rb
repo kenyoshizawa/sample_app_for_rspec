@@ -2,11 +2,10 @@ require 'rails_helper'
 
 RSpec.describe 'Tasks', type: :system do
   let(:user) { create(:user) }
-  let(:task) { create(:task_todo, user: user) }
-  let(:other_user) { create(:user) }
-  let(:other_task) { create(:task_todo, user: other_user) }
 
   describe 'ログイン前' do
+    let!(:task) { create(:task_todo, user: user) }
+    
     describe 'タスク新規作成' do
       it 'ログインページにリダイレクトされること' do
         visit new_task_path
@@ -15,24 +14,40 @@ RSpec.describe 'Tasks', type: :system do
       end
     end
 
-    describe 'タスク編集' do
-      before { task }
-
-      it 'ログインページにリダイレクトされること' do
-        visit  edit_task_path(task)
+    context 'タスクの編集ページにアクセス' do
+      it '編集ページへのアクセスが失敗する' do
+        visit edit_task_path(task)
+        expect(page).to have_content('Login required')
         expect(current_path).to eq login_path
-        expect(page).to have_content "Login required"
+      end
+    end
+
+    context 'タスクの詳細ページにアクセス' do
+      it 'タスクの詳細情報が表示される' do
+        visit task_path(task)
+        expect(page).to have_content task.title
+        expect(current_path).to eq task_path(task)
+      end
+    end
+
+    context 'タスクの一覧ページにアクセス' do
+      it 'すべてのユーザーのタスク情報が表示される' do
+        task_list = create_list(:task_todo, 3)
+        visit tasks_path
+        expect(page).to have_content task_list[0].title
+        expect(page).to have_content task_list[1].title
+        expect(page).to have_content task_list[2].title
+        expect(current_path).to eq tasks_path
       end
     end
   end
 
   describe 'ログイン後' do
-    include LoginHelper
-    before { login_as_user user }
+    before { login_as_user(user) }
 
     describe 'タスク新規作成' do
       it 'タスクが作成できること' do
-        click_on('New task')
+        visit new_task_path
         fill_in 'Title', with: 'テストタイトル'
         fill_in 'Content', with: 'テスト本文'
         select 'todo', from: 'Status'
@@ -48,9 +63,11 @@ RSpec.describe 'Tasks', type: :system do
     end
 
     describe 'タスク編集' do
-      context '自分のタスク' do
-        before { task }
+      let!(:task) { create(:task_todo, user: user) }
+      let(:other_user) { create(:user) }
+      let(:other_task) { create(:task_todo, user: other_user) }
 
+      context '自分のタスク' do
         it 'タスクが編集できること' do
           visit edit_task_path(task)
           fill_in 'Title', with: 'テストタイトル編集'
@@ -66,6 +83,7 @@ RSpec.describe 'Tasks', type: :system do
           expect(page).to have_content('done'), '更新したタスクのステータスが表示されていません'
           # expect(page).to have_content('2021/2/24 12:30'), '更新したタスクのデッドライン日時が表示されていません'
         end
+
       end
 
       context '他人のタスク' do
@@ -78,9 +96,9 @@ RSpec.describe 'Tasks', type: :system do
     end
 
     describe 'destroy' do
-      context '自分の掲示板' do
-        before { task }
+      let!(:task) { create(:task_todo, user: user) }
 
+      context '自分の掲示板' do
         it '掲示板が削除できること' do
           visit tasks_path
           page.accept_confirm { click_on('Destroy') }

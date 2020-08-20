@@ -18,6 +18,8 @@ RSpec.describe 'UserSessions', type: :system do
     context 'フォームが未入力' do
       it 'ログイン処理が失敗する' do
         visit login_path
+        fill_in 'Email', with: ''
+        fill_in 'Password', with: 'password'
         click_button 'Login'
         expect(current_path).to eq login_path
         expect(page).to have_content("Login failed"), 'フラッシュメッセージ「Login failed」が表示されていません'
@@ -26,12 +28,10 @@ RSpec.describe 'UserSessions', type: :system do
   end
 
   describe 'ログイン後' do
-    include LoginHelper
-    before { login_as_user user }
-    
     context 'ログアウトボタンをクリック' do
       it 'ログアウト処理が成功する' do
-        click_on('Logout')
+        login_as_user(user)
+        click_link 'Logout'
         expect(current_path).to eq root_path
         expect(page).to have_content('Logged out'), 'フラッシュメッセージ「Logged out」が表示されていません'
       end
